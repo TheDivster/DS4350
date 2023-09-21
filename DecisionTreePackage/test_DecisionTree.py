@@ -10,7 +10,7 @@ class TestDecisionTree(TestCase, DecisionTree):
         df: pd.DataFrame = pd.DataFrame()
         df["col1"] = pd.Series([1, 2, 3, 2])
         dtree: DecisionTree = DecisionTree(df)
-        self.assertEqual(dtree._entropy(*df["col1"].value_counts(normalize=True)),
+        self.assertEqual(dtree.entropy(*df["col1"].value_counts(normalize=True)),
                          - (1 / 4) * math.log2(1 / 4) * 2 - (1 / 2) * math.log2(
                              1 / 2))  # the * in front of an iterable expands it
 
@@ -22,12 +22,12 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["x4"] = pd.Series([0, 0, 1, 1, 0, 0, 1])
         df["y"] = pd.Series([0, 0, 1, 1, 0, 0, 0])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree._entropy, True)
+        dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.entropy, 100, visualize=True)
         try:
             dtree._dot.render(filename='tree.dot')
         except Exception as e:
             print("something went wrong with the visualization", e)
-        self.assertEqual(dtree.id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree._entropy).get_value(), "x2")
+        self.assertEqual(dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.entropy, 100).get_value(), "x2")
 
     def test_id3_categorical(self):
         df: pd.DataFrame = pd.DataFrame()
@@ -37,12 +37,12 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["w"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
         df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.id3(df, {"o", "t", "h", "w"}, "play?", dtree._entropy, True)
+        dtree._id3(df, {"o", "t", "h", "w"}, "play?", dtree.entropy, 100, visualize=True)
         try:
             dtree._dot.render(filename='tree.dot')
         except Exception as e:
             print("something went wrong with the visualization", e)
-        self.assertEqual(dtree.id3(df, {"o", "t", "h", "w"}, "play?", dtree._entropy,).get_value(), "o")
+        self.assertEqual(dtree._id3(df, {"o", "t", "h", "w"}, "play?", dtree.entropy, 100).get_value(), "o")
 
     def test_id3_categorical_ginni(self):
         df: pd.DataFrame = pd.DataFrame()
@@ -52,26 +52,26 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["w"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
         df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.id3(df, {"o", "t", "h", "w"}, "play?", dtree._ginni_index, True)
+        dtree._id3(df, {"o", "t", "h", "w"}, "play?", dtree.ginni_index, 100, visualize=True)
         try:
             dtree._dot.render(filename='tree.dot')
         except Exception as e:
             print("something went wrong with the visualization", e)
-        self.assertEqual(dtree.id3(df, {"o", "t", "h", "w"}, "play?", dtree._ginni_index, ).get_value(), "o")
+        self.assertEqual(dtree._id3(df, {"o", "t", "h", "w"}, "play?", dtree.ginni_index, 100).get_value(), "o")
 
     def test_majority_label(self):
         df: pd.DataFrame = pd.DataFrame()
         df["col1"] = pd.Series([1, 2, 2, 2])
         df["target"] = pd.Series([1, 0, 1, 1])
         dtree: DecisionTree = DecisionTree(df)
-        self.assertEqual(0.25, dtree._majority_error(df, "target"))
+        self.assertEqual(0.25, dtree.majority_error(df, "target"))
 
     def test_majority_label_2(self):
         df: pd.DataFrame = pd.DataFrame()
         df["col1"] = pd.Series([1, 2, 2, 2])
         df["target"] = pd.Series([1, 0, 0, 1])
         dtree: DecisionTree = DecisionTree(df)
-        self.assertEqual(0.5, dtree._majority_error(df, "target"))
+        self.assertEqual(0.5, dtree.majority_error(df, "target"))
 
     def test_id3_categorical_majority(self):
         df: pd.DataFrame = pd.DataFrame()
@@ -81,12 +81,12 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["windy"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
         df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.id3(df, {"outlook", "temp", "humidity", "windy"}, "play?", dtree._majority_error, True)
+        dtree._id3(df, {"outlook", "temp", "humidity", "windy"}, "play?", dtree.majority_error, 100, visualize=True)
         try:
             dtree._dot.render(filename='tree.dot')
         except Exception as e:
             print("something went wrong with the visualization", e)
-        self.assertEqual(dtree.id3(df, {"outlook", "temp", "humidity", "windy"}, "play?", dtree._majority_error).get_value(), "humidity")  # What should we expect
+        self.assertEqual(dtree._id3(df, {"outlook", "temp", "humidity", "windy"}, "play?", dtree.majority_error, 100).get_value(), "humidity")  # What should we expect
 
     def test_majority_2(self):
         df: pd.DataFrame = pd.DataFrame()
@@ -96,12 +96,12 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["x4"] = pd.Series([0, 0, 1, 1, 0, 0, 1])
         df["y"] = pd.Series([0, 0, 1, 1, 0, 0, 0])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree._majority_error, True)
+        dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.majority_error, 100, visualize=True)
         try:
             dtree._dot.render(filename='tree.dot')
         except Exception as e:
             print("something went wrong with the visualization", e)
-        self.assertEqual(dtree.id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree._majority_error).get_value(), "x2")
+        self.assertEqual(dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.majority_error, 100).get_value(), "x2")
 
     def test_predict_numerical(self):
         df: pd.DataFrame = pd.DataFrame()
@@ -111,7 +111,7 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["x4"] = pd.Series([0, 0, 1, 1, 0, 0, 1])
         df["y"] = pd.Series([0, 0, 1, 1, 0, 0, 0])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.build(df, {"x1", "x2", "x3", "x4"}, "y", dtree._entropy)
+        dtree.build(df, {"x1", "x2", "x3", "x4"}, "y", dtree.entropy, 100)
         self.assertEqual(0, dtree.predict(df, 0))
         self.assertEqual(0, dtree.predict(df, 1))
         self.assertEqual(1, dtree.predict(df, 2))
@@ -128,7 +128,7 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["x4"] = pd.Series([0, 0, 1, 1, 0, 0, 1])
         df["y"] = pd.Series([0, 0, 1, 1, 0, 0, 0])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.build(df, {"x1", "x2", "x3", "x4"}, "y", dtree._majority_error)
+        dtree.build(df, {"x1", "x2", "x3", "x4"}, "y", dtree.majority_error, 100)
         self.assertEqual(0, dtree.predict(df, 0))
         self.assertEqual(0, dtree.predict(df, 1))
         self.assertEqual(1, dtree.predict(df, 2))
@@ -145,7 +145,7 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["w"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
         df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree._ginni_index, True)
+        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree.ginni_index, 100)
         self.assertEqual("-", dtree.predict(df, 0))
         self.assertEqual("+", dtree.predict(df, 2))
         self.assertEqual("+", dtree.predict(df, -2))
@@ -161,7 +161,7 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["w"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
         df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree._majority_error, True)
+        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree.majority_error, 100)
         self.assertEqual("-", dtree.predict(df, 0))
         self.assertEqual("+", dtree.predict(df, 2))
         self.assertEqual("+", dtree.predict(df, -2))
@@ -177,10 +177,59 @@ class TestDecisionTree(TestCase, DecisionTree):
         df["w"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
         df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
         dtree: DecisionTree = DecisionTree(df)
-        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree._majority_error, True)
+        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree.majority_error, 100)
         self.assertEqual("-", dtree.predict(df, 0))
         self.assertEqual("+", dtree.predict(df, 2))
         self.assertEqual("+", dtree.predict(df, -2))
         self.assertEqual("+", dtree.predict(df, -3))
         self.assertEqual("+", dtree.predict(df, -6))
         self.assertEqual("-", dtree.predict(df, 5))
+
+    def test_depth_ginni_index(self):
+        df: pd.DataFrame = pd.DataFrame()
+        df["o"] = pd.Series(["s", "s", "o", "r", "r", "r", "o", "s", "s", "r", "s", "o", "o", "r"])
+        df["t"] = pd.Series(["h", "h", "h", "m", "c", "c", "c", "m", "c", "m", "m", "m", "h", "m"])
+        df["h"] = pd.Series(["h", "h", "h", "h", "n", "n", "n", "h", "n", "n", "n", "h", "n", "h"])
+        df["w"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
+        df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
+        dtree: DecisionTree = DecisionTree(df)
+        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree.ginni_index, 1, visualize=True)
+        try:
+            dtree._dot.render(filename='tree.dot')
+        except Exception as e:
+            print("something went wrong with the visualization", e)
+
+    def test_depth_2_ginni_index(self):
+        df: pd.DataFrame = pd.DataFrame()
+        df["o"] = pd.Series(["s", "s", "o", "r", "r", "r", "o", "s", "s", "r", "s", "o", "o", "r"])
+        df["t"] = pd.Series(["h", "h", "h", "m", "c", "c", "c", "m", "c", "m", "m", "m", "h", "m"])
+        df["h"] = pd.Series(["h", "h", "h", "h", "n", "n", "n", "h", "n", "n", "n", "h", "n", "h"])
+        df["w"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
+        df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
+        dtree: DecisionTree = DecisionTree(df)
+        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree.ginni_index, 2, visualize=True)
+        try:
+            dtree._dot.render(filename='tree.dot')
+        except Exception as e:
+            print("something went wrong with the visualization", e)
+
+    def test_depth_0_ginni_index(self):
+        df: pd.DataFrame = pd.DataFrame()
+        df["o"] = pd.Series(["s", "s", "o", "r", "r", "r", "o", "s", "s", "r", "s", "o", "o", "r"])
+        df["t"] = pd.Series(["h", "h", "h", "m", "c", "c", "c", "m", "c", "m", "m", "m", "h", "m"])
+        df["h"] = pd.Series(["h", "h", "h", "h", "n", "n", "n", "h", "n", "n", "n", "h", "n", "h"])
+        df["w"] = pd.Series(["w", "s", "w", "w", "w", "s", "s", "w", "w", "w", "s", "s", "w", "s"])
+        df["play?"] = pd.Series(["-", "-", "+", "+", "+", "-", "+", "-", "+", "+", "+", "+", "+", "-"])
+        dtree: DecisionTree = DecisionTree(df)
+        dtree.build(df, {"o", "t", "h", "w"}, "play?", dtree.ginni_index, 0, visualize=True)
+        try:
+            dtree._dot.render(filename='tree.dot')
+        except Exception as e:
+            print("something went wrong with the visualization", e)
+        self.assertEqual("+", dtree.predict(df, 0))
+        self.assertEqual("+", dtree.predict(df, 2))
+        self.assertEqual("+", dtree.predict(df, -2))
+        self.assertEqual("+", dtree.predict(df, -3))
+        self.assertEqual("+", dtree.predict(df, -6))
+        self.assertEqual("+", dtree.predict(df, 5))
+

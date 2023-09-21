@@ -17,14 +17,18 @@ class DecisionTree:
     """
     implements id3 algorithm
     Note: visualize is an experimental feature purely used for debugging
+    Assumes set_depth >= 0, but does not enforce this.
     """
-    def id3(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, visualize: bool = False) -> Node:
+    def _id3(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int, depth: int = 0, visualize: bool = False) -> Node:
         # Base case
         if len(data[label].unique()) == 1:
             # Note: mode returns an array
             return Node(data[label].mode()[0])  # all columns of the label should have the same attribute
-        if len(attributes) == 0:
-            return Node(data.iloc[label].mode()[0])
+        if len(attributes) == 0 or depth >= set_depth:
+            most_common_value_node: Node = Node(data[label].mode()[0])
+            if set_depth == 0:
+                self._dot.node(str(most_common_value_node.get_value()))
+            return most_common_value_node
 
         a: typing.Any = self._total_information_gain(data, attributes, label, splitting_criteria)
         root: Node = Node(a)
@@ -35,7 +39,7 @@ class DecisionTree:
             if s_v.shape[0] == 0:  # shape[0] gives the number of rows/observations
                 root.add_child(values, Node(data[label].mode()[0]))
             else:
-                this_node: Node = self.id3(s_v, attributes - {a}, label, splitting_criteria, visualize)
+                this_node: Node = self._id3(s_v, attributes - {a}, label, splitting_criteria, set_depth, depth + 1, visualize)
                 root.add_child(values, this_node)
                 if visualize:
                     self._dot.node(str(this_node.get_value()))
@@ -45,8 +49,8 @@ class DecisionTree:
     '''
     Builds and stores the decision tree
     '''
-    def build(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, visualize: bool = False):
-        self.__head = self.id3(data, attributes, label, splitting_criteria, visualize)
+    def build(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int, depth: int = 0, visualize: bool = False) -> None:
+        self.__head = self._id3(data, attributes, label, splitting_criteria, set_depth, depth, visualize)
 
     '''
     The criteria is the function that we use to decide the "best" split. Each of its inputs should be a percent.
@@ -54,7 +58,7 @@ class DecisionTree:
     def _total_information_gain(self, data: pd.DataFrame, attributes: set, label: typing.Any, criteria: Callable) -> str:
         gain_dict: dict[float, str] = {}  # for quick retrival of attribute based on max information gain
         gain_list: list[float] = []  # for quick max calculation
-        if criteria != self._majority_error:
+        if criteria != self.majority_error:
             s_criteria = criteria(*data[label].value_counts(normalize=True))
         else:
             s_criteria = criteria(data, label)
@@ -63,7 +67,7 @@ class DecisionTree:
             # have to recalculate s_criteria each iteration
             for values in data[attribute].unique():
                 s_v: pd.DataFrame = data[data[attribute] == values]
-                if criteria != self._majority_error:
+                if criteria != self.majority_error:
                     criteria_s_v = criteria(*self._match_positive_negative(s_v, label)) # TODO: change this to value counts
                 else:
                     criteria_s_v = criteria(s_v, label)
@@ -75,7 +79,7 @@ class DecisionTree:
     """
     Calculate and return entropy based on the proportion data observed
     """
-    def _entropy(self, *args: float) -> float:
+    def entropy(self, *args: float) -> float:
         calculated_entropy: float = 0
         for arg in args:
             calculated_entropy -= arg * math.log2(arg)
@@ -90,13 +94,13 @@ class DecisionTree:
             return_list.append(proportion)
         return return_list
 
-    def _ginni_index(self, *args: float) -> float:
+    def ginni_index(self, *args: float) -> float:
         calculated_ginni: float = 1
         for arg in args:
             calculated_ginni -= arg ** 2
         return calculated_ginni
 
-    def _majority_error(self, data: pd.DataFrame, label: str) -> float:
+    def majority_error(self, data: pd.DataFrame, label: str) -> float:
         target_series: pd.Series = data[label]
         majority_label: typing.Any = target_series.mode()[0]
         value_count: pd.Series = target_series.value_counts()
