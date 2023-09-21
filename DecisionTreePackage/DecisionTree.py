@@ -1,0 +1,113 @@
+import math
+import typing
+import graphviz
+import pandas as pd
+from Node import Node
+from typing import Callable
+
+"""
+Builds and represents a decision tree
+"""
+class DecisionTree:
+    def __init__(self, data: pd.DataFrame) -> None:
+        self.__head = None
+        self.__data = data
+        self._dot = graphviz.Digraph('tree')
+
+    """
+    implements id3 algorithm
+    Note: visualize is an experimental feature purely used for debugging
+    """
+    def id3(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, visualize: bool = False) -> Node:
+        # Base case
+        if len(data[label].unique()) == 1:
+            # Note: mode returns an array
+            return Node(data[label].mode()[0])  # all columns of the label should have the same attribute
+        if len(attributes) == 0:
+            return Node(data.iloc[label].mode()[0])
+
+        a: typing.Any = self._total_information_gain(data, attributes, label, splitting_criteria)
+        root: Node = Node(a)
+        if visualize:
+            self._dot.node(str(root.get_value()))
+        for values in data[a].unique():  # TODO: check this line
+            s_v: pd.DataFrame = data[data[a] == values]
+            if s_v.shape[0] == 0:  # shape[0] gives the number of rows/observations
+                root.add_child(values, Node(data[label].mode()[0]))
+            else:
+                this_node: Node = self.id3(s_v, attributes - {a}, label, splitting_criteria, visualize)
+                root.add_child(values, this_node)
+                if visualize:
+                    self._dot.node(str(this_node.get_value()))
+                    self._dot.edge(str(root.get_value()), str(this_node.get_value()), label=str(values))
+        return root
+
+    '''
+    Builds and stores the decision tree
+    '''
+    def build(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, visualize: bool = False):
+        self.__head = self.id3(data, attributes, label, splitting_criteria, visualize)
+
+    '''
+    The criteria is the function that we use to decide the "best" split. Each of its inputs should be a percent.
+    '''
+    def _total_information_gain(self, data: pd.DataFrame, attributes: set, label: typing.Any, criteria: Callable) -> str:
+        gain_dict: dict[float, str] = {}  # for quick retrival of attribute based on max information gain
+        gain_list: list[float] = []  # for quick max calculation
+        if criteria != self._majority_error:
+            s_criteria = criteria(*data[label].value_counts(normalize=True))
+        else:
+            s_criteria = criteria(data, label)
+        for attribute in attributes:
+            gain = s_criteria  # shortcut that stands for the entropy (or other splitting criteria) of s so, we don't
+            # have to recalculate s_criteria each iteration
+            for values in data[attribute].unique():
+                s_v: pd.DataFrame = data[data[attribute] == values]
+                if criteria != self._majority_error:
+                    criteria_s_v = criteria(*self._match_positive_negative(s_v, label)) # TODO: change this to value counts
+                else:
+                    criteria_s_v = criteria(s_v, label)
+                gain -= (s_v.shape[0] / data.shape[0]) * criteria_s_v
+            gain_dict[gain] = attribute
+            gain_list.append(gain)
+        return gain_dict[max(gain_list)]
+
+    """
+    Calculate and return entropy based on the proportion data observed
+    """
+    def _entropy(self, *args: float) -> float:
+        calculated_entropy: float = 0
+        for arg in args:
+            calculated_entropy -= arg * math.log2(arg)
+        return calculated_entropy
+
+    """
+    Finds the proportion of examples that match the values the splitting attributes can take
+    """
+    def _match_positive_negative(self, s_v: pd.DataFrame, label: str) -> list[float]:
+        return_list: list[float] = []
+        for proportion in s_v[label].value_counts(normalize=True):
+            return_list.append(proportion)
+        return return_list
+
+    def _ginni_index(self, *args: float) -> float:
+        calculated_ginni: float = 1
+        for arg in args:
+            calculated_ginni -= arg ** 2
+        return calculated_ginni
+
+    def _majority_error(self, data: pd.DataFrame, label: str) -> float:
+        target_series: pd.Series = data[label]
+        majority_label: typing.Any = target_series.mode()[0]
+        value_count: pd.Series = target_series.value_counts()
+        error: float = (len(target_series) - len(target_series[target_series == majority_label])) / sum(value_count)
+        return error
+
+    def predict(self, data: pd.DataFrame, row_num: int) -> typing.Any:
+        current_node: Node = self.__head
+        while current_node.has_children():
+            # the value of the node determines what attribute to look down
+            value_node: typing.Any = current_node.get_value()
+            value_data_at_node: typing.Any = data.iloc[row_num][value_node]
+            current_node = current_node.get_child_edge(value_data_at_node)
+        return current_node.get_value()
