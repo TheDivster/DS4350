@@ -18,6 +18,8 @@ class DecisionTree:
     implements id3 algorithm
     Note: visualize is an experimental feature purely used for debugging
     Assumes set_depth >= 0, but does not enforce this.
+    splitting criteria is the criteria used to define the "best" attribute to split on
+    Currently, criteria only works with self.entropy, self.ginni_index, self.majority_error
     """
     def _id3(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int, depth: int = 0, visualize: bool = False) -> Node:
         # Base case
@@ -34,10 +36,14 @@ class DecisionTree:
         root: Node = Node(a)
         if visualize:
             self._dot.node(str(root.get_value()))
-        for values in data[a].unique():  # TODO: check this line
+        for values in self.__data[a].unique():  # TODO: check this line
             s_v: pd.DataFrame = data[data[a] == values]
             if s_v.shape[0] == 0:  # shape[0] gives the number of rows/observations
-                root.add_child(values, Node(data[label].mode()[0]))
+                leaf_node: Node = Node(data[label].mode()[0]) # can't do this if s_v shape is empty
+                root.add_child(values, leaf_node)
+                if visualize:
+                    self._dot.node(str(leaf_node.get_value()))
+                    self._dot.edge(str(root.get_value()), str(leaf_node.get_value()))
             else:
                 this_node: Node = self._id3(s_v, attributes - {a}, label, splitting_criteria, set_depth, depth + 1, visualize)
                 root.add_child(values, this_node)
@@ -49,8 +55,8 @@ class DecisionTree:
     '''
     Builds and stores the decision tree
     '''
-    def build(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int, depth: int = 0, visualize: bool = False) -> None:
-        self.__head = self._id3(data, attributes, label, splitting_criteria, set_depth, depth, visualize)
+    def build(self, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int, depth: int = 0, visualize: bool = False) -> None:
+        self.__head = self._id3(self.__data, attributes, label, splitting_criteria, set_depth, depth, visualize)
 
     '''
     The criteria is the function that we use to decide the "best" split. Each of its inputs should be a percent.
@@ -104,9 +110,12 @@ class DecisionTree:
         target_series: pd.Series = data[label]
         majority_label: typing.Any = target_series.mode()[0]
         value_count: pd.Series = target_series.value_counts()
-        error: float = (len(target_series) - len(target_series[target_series == majority_label])) / sum(value_count)
+        error: float = (target_series.shape[0] - target_series[target_series == majority_label].shape[0]) / sum(value_count)
         return error
 
+    '''
+    Only works with multiple observations
+    '''
     def predict(self, data: pd.DataFrame, row_num: int) -> typing.Any:
         current_node: Node = self.__head
         while current_node.has_children():
