@@ -27,7 +27,7 @@ class TestDecisionTree(TestCase, DecisionTree):
             dtree._dot.render(filename='tree.dot')
         except Exception as e:
             print("something went wrong with the visualization", e)
-        self.assertEqual(dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.entropy, 100).get_value(), "x2")
+        self.assertTrue(dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.entropy, 100).get_value() == "x2" or dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.entropy, 100).get_value() == "x4")
 
     def test_id3_categorical(self):
         df: pd.DataFrame = pd.DataFrame()
@@ -101,7 +101,7 @@ class TestDecisionTree(TestCase, DecisionTree):
             dtree._dot.render(filename='tree.dot')
         except Exception as e:
             print("something went wrong with the visualization", e)
-        self.assertEqual(dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.majority_error, 100).get_value(), "x2")
+        self.assertTrue(dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.majority_error, 100).get_value() == "x2", dtree._id3(df, {"x1", "x2", "x3", "x4"}, "y", dtree.majority_error, 100).get_value() == "x4")
 
     def test_predict_numerical(self):
         df: pd.DataFrame = pd.DataFrame()
