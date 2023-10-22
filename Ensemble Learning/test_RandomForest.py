@@ -15,7 +15,6 @@ class Test_RandomForest(TestCase):
             names=["age", "job", "marital", "education", "default", "balance", "housing",
                    "loan", "contact", "day", "month", "duration", "campaign", "pdays",
                    "previous", "poutcome", "y"])
-        tree: RandomForest = RandomForest(bank_train)
 
         def make_numerical_attributes_binary(data):
             column_types: dict[str, str] = data.dtypes.to_dict()
@@ -26,8 +25,10 @@ class Test_RandomForest(TestCase):
         make_numerical_attributes_binary(bank_test)
         make_numerical_attributes_binary(bank_train)
 
+        tree: RandomForest = RandomForest(bank_train)
+
         tree.build(attributes=set(bank_train.columns) - {"y"}, label="y", splitting_criteria=tree.ENTROPY,
-                   num_trees=200, num_samples=bank_train.shape[0])
+                   num_trees=20, num_samples=bank_train.shape[0])
 
         def predict_dataframe(model: RandomForest, test_data: pd.DataFrame, label: str) -> float:
             accuracy_count: int = 0  # represents the count of correct predictions

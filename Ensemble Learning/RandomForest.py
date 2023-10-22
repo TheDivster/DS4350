@@ -19,7 +19,7 @@ class RandomForest:
               set_depth: int = sys.maxsize) -> None:
         """
         Learn many trees with bootstrapped sample
-        I am defining a smaller attribute subset as one that is approximately half the size
+        I am defining a smaller attribute subset as one that is approximately half to a quarter the size
         Note: There will be problems if we try to predict outcomes for labels we don't have if we don't set num_samples to hign enough
         :param num_trees: number of trees to use to vote
         :param num_samples: number of samples to bootstrap
@@ -31,7 +31,7 @@ class RandomForest:
         """
         for i in range(num_trees):
             sample: pd.DataFrame = self.__data.sample(num_samples, replace=True)
-            attributes_sub_set: set = set(np.random.choice(list(attributes), math.ceil(len(attributes)/4)))
+            attributes_sub_set: set =  set(np.random.choice(list(attributes), math.ceil(len(attributes)/2)))
             tree = DecisionTree(sample)
             tree.build(attributes_sub_set, label, splitting_criteria, set_depth)
             self.__trees.append(tree)
