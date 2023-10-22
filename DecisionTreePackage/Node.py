@@ -1,16 +1,20 @@
 from __future__ import annotations
 import typing
 
+
 class Node:
     def __init__(self, value: str) -> None:
         self.__value: typing.Any = value
         self.__children: dict[typing.Any, (int, Node)] = {}
         self.__edges: dict[typing.Any, Node] = {}
 
-    """
-    Setter method for adding new child 
-    """
     def add_child(self, edge: typing.Any, ref_next_child: Node) -> None:
+        """
+        Setter method for adding new child
+        :param edge: Value feature can take
+        :param ref_next_child: reference to next child
+        :return: void
+        """
         self.__children[ref_next_child.__value] = (edge, ref_next_child)
         self.__edges[edge] = ref_next_child
 
@@ -44,5 +48,10 @@ class Node:
     def get_edge(self, value: typing.Any):
         return self.__children[value][0]
 
-    def get_child_edge(self, edge: typing.Any):
+    def get_child_edge(self, edge: typing.Any) -> Node:
+        """
+        Gets the child associated with the edge
+        :param edge: value feature can take
+        :return: child node
+        """
         return self.__edges[edge]

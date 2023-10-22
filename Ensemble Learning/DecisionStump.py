@@ -6,43 +6,15 @@ from typing import Callable
 from DecisionTreePackage.Node import Node
 
 
-
-class AdaBoost:
+class DecisionStump:
   def __init__(self, data: pd.DataFrame) -> None:
     self.__head = None
     self.__data = data
-    self.__stumps: list[AdaBoost] = []
-    self.__alpha: list[float] = []
 
-  def build_boost(self, attributes: set, label: typing.Any, splitting_criteria: Callable, num_trees: int,
-                  depth: int = 2) -> None:
-    m: int = self.__data.shape[0]  # number of examples
-    weights: np.array = np.ones(shape=m) / m
-    for i in range(num_trees):
-      tree: AdaBoost = AdaBoost(self.__data)
-      tree.build(attributes, label, splitting_criteria, depth, weights)
-      epsilon_t: float = 0
-      for index in range(m):
-        if tree.__predict_single(self.__data, index) != (self.__data.iloc[index])[label]:
-          epsilon_t += weights[index]
-
-      alpha_t: float = 1 / 2 * math.log((1 - epsilon_t) / epsilon_t)
-      self.__alpha.append(alpha_t)
-      for index in range(m):
-        if tree.__predict_single(self.__data, index) == (self.__data.iloc[index])[label]:
-          weights[index] = weights[index] * np.exp(-alpha_t * 1)
-        else:
-          weights[index] = weights[index] * np.exp(-alpha_t * -1)
-      weights = weights / np.sum(weights)  # normalize to add weights to 1
-      self.__stumps.append(tree)
-
-  def _total_information_gain(self, data: pd.DataFrame, attributes: set, label: typing.Any, criteria: Callable,
-                              weights: np.array) -> str:
+  def _total_information_gain(self, data: pd.DataFrame, attributes: set, label: typing.Any, criteria: Callable) -> str:
     '''
     The criteria is the function that we use to decide the "best" split. Each of its inputs should be a percent.
     '''
-    data = data.copy()
-    data["weights"] = pd.Series(weights)
     gain_dict: dict[float, str] = {}  # for quick retrival of attribute based on max information gain
     gain_list: list[float] = []  # for quick max calculation
     if criteria != self.majority_error:
@@ -67,7 +39,7 @@ class AdaBoost:
 
   def __fractional_proportions(self, data: pd.DataFrame, label: str) -> list[float]:
     '''
-    Calculate entropy based on every example being fractional
+    Calculate entropy based on every example being fractional with the weights being in a column named weights
     :param data: The section of data to calculate fractional proportions of
     :param label: The label for what we are predicting
     :return: A list of the proportions with all the proportions adding to one
@@ -83,9 +55,7 @@ class AdaBoost:
       output.append(proportion)
     return output
 
-
-  def _id3(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int,
-           weights: np.array, depth: int = 0) -> Node:
+  def _id3(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int, depth: int = 0) -> Node:
     """
         Implements id3 algorithm
         Note: visualize is an experimental feature purely used for debugging
@@ -101,7 +71,7 @@ class AdaBoost:
       most_common_value_node: Node = Node(data[label].mode()[0])
       return most_common_value_node
 
-    a: typing.Any = self._total_information_gain(data, attributes, label, splitting_criteria, weights)
+    a: typing.Any = self._total_information_gain(data, attributes, label, splitting_criteria)
     root: Node = Node(a)
     for values in self.__data[a].unique():
       s_v: pd.DataFrame = data[data[a] == values]
@@ -113,12 +83,16 @@ class AdaBoost:
         root.add_child(values, this_node)
     return root
 
-  def build(self, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int, weights: np.array,
+  def build(self, attributes: set, label: typing.Any, splitting_criteria: Callable, weights: np.array, set_depth: int = 2,
             depth: int = 0) -> None:
     '''
-    Builds and stores the decision tree\
+    Builds and stores the decision tree
+    Make sure to set weights to 1 for normal case
+    Weights are implicitly included in the data being used
     '''
-    self.__head = self._id3(self.__data, attributes, label, splitting_criteria, set_depth, weights, depth)
+    data = self.__data.copy()
+    data["weights"] = pd.Series(weights)
+    self.__head = self._id3(data, attributes, label, splitting_criteria, set_depth, depth)
 
   def ginni_index(self, *args: float) -> float:
     calculated_ginni: float = 1
@@ -133,7 +107,7 @@ class AdaBoost:
     error: float = (target_series.shape[0] - target_series[target_series == majority_label].shape[0]) / sum(value_count)
     return error
 
-  def __predict_single(self, data: pd.DataFrame, row_num: int) -> typing.Any:
+  def predict(self, data: pd.DataFrame, row_num: int) -> typing.Any:
     '''
     Only works with multiple observations
     For one tree only
@@ -154,9 +128,3 @@ class AdaBoost:
     for arg in args:
       calculated_entropy -= arg * math.log2(arg)
     return calculated_entropy
-
-  def predict(self, data: pd.DataFrame, row_num: int) -> typing.Any:
-    predictions: list[typing.Any] = []
-    for tree in self.__stumps:
-      predictions.append(tree.__predict_single(data, row_num))
-    return np.sign(np.dot(self.__alpha, predictions))
