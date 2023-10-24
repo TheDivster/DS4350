@@ -53,6 +53,7 @@ class DecisionStump:
         proportion += (subset.iloc[row])['weights']  # add the weights
         # TODO: Check if we need to normalize proportions
       output.append(proportion)
+    output /= sum(output)
     return output
 
   def _id3(self, data: pd.DataFrame, attributes: set, label: typing.Any, splitting_criteria: Callable, set_depth: int, depth: int = 0) -> Node:

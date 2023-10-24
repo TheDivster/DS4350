@@ -15,7 +15,7 @@ class RandomForest:
         self.GINNI_INDEX: typing.Callable = DecisionTree.ginni_index
         self.MAJORITY_ERROR: typing.Callable = DecisionTree.majority_error
 
-    def build(self, num_trees: int, num_samples: int, attributes: set, label: typing.Any, splitting_criteria: Callable,
+    def build(self, num_trees: int, num_samples: int, attributes: set, label: typing.Any, splitting_criteria: Callable, num_attributes: int,
               set_depth: int = sys.maxsize) -> None:
         """
         Learn many trees with bootstrapped sample
@@ -31,7 +31,7 @@ class RandomForest:
         """
         for i in range(num_trees):
             sample: pd.DataFrame = self.__data.sample(num_samples, replace=True)
-            attributes_sub_set: set =  set(np.random.choice(list(attributes), math.ceil(len(attributes)/2)))
+            attributes_sub_set: set = set(np.random.choice(list(attributes), num_attributes)) # set(np.random.choice(list(attributes), math.ceil(len(attributes)/2)))
             tree = DecisionTree(sample)
             tree.build(attributes_sub_set, label, splitting_criteria, set_depth)
             self.__trees.append(tree)

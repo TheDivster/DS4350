@@ -28,7 +28,7 @@ class Test_RandomForest(TestCase):
         tree: RandomForest = RandomForest(bank_train)
 
         tree.build(attributes=set(bank_train.columns) - {"y"}, label="y", splitting_criteria=tree.ENTROPY,
-                   num_trees=20, num_samples=bank_train.shape[0])
+                   num_trees=50, num_samples=bank_train.shape[0])
 
         def predict_dataframe(model: RandomForest, test_data: pd.DataFrame, label: str) -> float:
             accuracy_count: int = 0  # represents the count of correct predictions
