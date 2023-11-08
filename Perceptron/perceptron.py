@@ -7,21 +7,18 @@ Original file is located at
     https://colab.research.google.com/drive/1VqRduPWTGvPdDoB1LK-FX1_J9aPjttAB
 """
 
-from google.colab import drive
-drive.mount("/content/gdrive")
-
 """## Load the dataset
 Note: we will need to turn the label values into -1 and 1.
 """
 
 import pandas as pd
-train = pd.read_csv("/content/gdrive/My Drive/CS 5350/Homework 3/bank-note/train.csv", names=['variance', 'skewness', 'curtosis', 'entropy', 'label'])
+train = pd.read_csv("/Users/divytripathy/PycharmProjects/Machine Learning/Perceptron/bank-note/train.csv", names=['variance', 'skewness', 'curtosis', 'entropy', 'label'])
 print(train.head())
 
 train['label'] = train['label'].apply(lambda x: 1 if x == 1 else -1)
 print(train.head())
 
-test = pd.read_csv("/content/gdrive/My Drive/CS 5350/Homework 3/bank-note/test.csv", names=['variance', 'skewness', 'curtosis', 'entropy', 'label'])
+test = pd.read_csv("/Users/divytripathy/PycharmProjects/Machine Learning/Perceptron/bank-note/test.csv", names=['variance', 'skewness', 'curtosis', 'entropy', 'label'])
 print(test.head())
 
 test['label'] = test['label'].apply(lambda x: 1 if x == 1 else -1)
